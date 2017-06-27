@@ -1,29 +1,22 @@
-
+from twisted.web import server, resource
 from twisted.internet import reactor
-from twisted.web import http
-import json
+import os
 
-class MyRequestHandler(http.Request):
+# multi part encoding example: http://marianoiglesias.com.ar/python/file-uploading-with-multi-part-encoding-using-twisted/
+class Simple(resource.Resource):
+    isLeaf = True
+    def render_GET(self, request):
+        return "{0}".format(request.args.keys())
+    def render_POST(self, request):
+        print("in render_POST")
+        print("name = ",request.args['filename'][0])
+        print("age = ",request.args['age'][0])
+        request.setHeader('Content-Length', os.stat('source.pdf').st_size)
+        with open('source.pdf', 'rb') as fd:
+            request.write(fd.read())
+        request.finish()
+        return server.NOT_DONE_YET
 
-    def process(self):
-         self.setHeader('Content-Type','application/json')
-         if 'name' in args:
-             print(name)
-         if 'age'in args:
-             prin
-         if self.resources.has_key(self.path):
-             self.write(self.resources[self.path])
-         else:
-             self.setResponseCode(http.NOT_FOUND)
-             self.write("<h1>Not Found</h1>Sorry, no such source")
-         self.finish()
- 
-class MyHTTP(http.HTTPChannel):
-     requestFactory=MyRequestHandler
- 
-class MyHTTPFactory(http.HTTPFactory):
-     def buildProtocol(self,addr):
-         return MyHTTP()
-
-reactor.listenTCP(8000,MyHTTPFactory())
+site = server.Site(Simple())
+reactor.listenTCP(8080, site)
 reactor.run()
